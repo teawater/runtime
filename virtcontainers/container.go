@@ -237,6 +237,8 @@ type ContainerDevice struct {
 	ID string
 	// ContainerPath is device path displayed in container
 	ContainerPath string
+	// True if device attach get error but ignored
+	AttachError bool
 }
 
 // Container is composed of a set of containers and a runtime environment.
@@ -1142,9 +1144,14 @@ func (c *Container) attachDevices() error {
 	// there's no need to do rollback when error happens,
 	// because if attachDevices fails, container creation will fail too,
 	// and rollbackFailingContainerCreation could do all the rollbacks
-	for _, dev := range c.devices {
+	for id, dev := range c.devices {
 		if err := c.sandbox.devManager.AttachDevice(dev.ID, c.sandbox); err != nil {
-			return err
+			c.devices[id].AttachError = true
+			c.Logger().WithFields(logrus.Fields{
+				"container":            c.id,
+				"device-id":            dev.ID,
+				"device-containerpath": dev.ContainerPath,
+			}).WithError(err).Error("attach device failed but ignored")
 		}
 	}
 

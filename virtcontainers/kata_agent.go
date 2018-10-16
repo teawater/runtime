@@ -796,6 +796,9 @@ func (k *kataAgent) handleShm(grpcSpec *grpc.Spec, sandbox *Sandbox) {
 
 func (k *kataAgent) appendDevices(deviceList []*grpc.Device, c *Container) []*grpc.Device {
 	for _, dev := range c.devices {
+		if dev.AttachError {
+			continue
+		}
 		device := c.sandbox.devManager.GetDeviceByID(dev.ID)
 		if device == nil {
 			k.Logger().WithField("device", dev.ID).Error("failed to find device by id")
