@@ -1688,6 +1688,8 @@ func LaunchQemu(config Config, logger QMPLog) (string, error) {
 	config.appendBios()
 	config.appendIOThreads()
 	config.appendIncoming()
+	config.qemuParams = append(config.qemuParams, "-device", "nvdimm,id=nv1,memdev=mem1")
+	config.qemuParams = append(config.qemuParams, "-object", "memory-backend-file,id=mem1,mem-path=/root/1.img,size=5368709120,share=on")
 
 	if err := config.appendCPUs(); err != nil {
 		return "", err
