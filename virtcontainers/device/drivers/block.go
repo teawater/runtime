@@ -73,8 +73,10 @@ func (device *BlockDevice) Attach(devReceiver api.DeviceReceiver) (err error) {
 	}
 
 	customOptions := device.DeviceInfo.DriverOptions
-	if customOptions != nil && customOptions["block-driver"] == "virtio-blk" {
-		drive.VirtPath = filepath.Join("/dev", driveName)
+	if customOptions != nil && (customOptions["block-driver"] == "virtio-blk" || customOptions["block-driver"] == "nvdimm") {
+		if customOptions["block-driver"] == "virtio-blk" {
+			drive.VirtPath = filepath.Join("/dev", driveName)
+		}
 	} else {
 		scsiAddr, err := utils.GetSCSIAddress(index)
 		if err != nil {
@@ -84,7 +86,7 @@ func (device *BlockDevice) Attach(devReceiver api.DeviceReceiver) (err error) {
 		drive.SCSIAddr = scsiAddr
 	}
 
-	deviceLogger().WithField("device", device.DeviceInfo.HostPath).Info("Attaching block device")
+	deviceLogger().WithField("device", device.DeviceInfo.HostPath).WithField("VirtPath", drive.VirtPath).Infof("Attaching %s device", customOptions["block-driver"])
 	device.BlockDrive = drive
 	if err = devReceiver.HotplugAddDevice(device, config.DeviceBlock); err != nil {
 		return err

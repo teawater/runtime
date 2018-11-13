@@ -24,6 +24,8 @@ const (
 	VirtioBlock string = "virtio-blk"
 	// VirtioSCSI indicates block driver is virtio-scsi based
 	VirtioSCSI string = "virtio-scsi"
+	// Nvdimm indicates block driver is nvdimm based
+	Nvdimm string = "nvdimm"
 )
 
 var (
@@ -57,6 +59,8 @@ func NewDeviceManager(blockDriver string, devices []api.Device) api.DeviceManage
 	}
 	if blockDriver == VirtioBlock {
 		dm.blockDriver = VirtioBlock
+	} else if blockDriver == Nvdimm {
+		dm.blockDriver = Nvdimm
 	} else {
 		dm.blockDriver = VirtioSCSI
 	}

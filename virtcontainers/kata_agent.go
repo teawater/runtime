@@ -59,6 +59,7 @@ var (
 	kata9pDevType        = "9p"
 	kataBlkDevType       = "blk"
 	kataSCSIDevType      = "scsi"
+	kataNvdimmDevType    = "nvdimm"
 	sharedDir9pOptions   = []string{"trans=virtio,version=9p2000.L,cache=mmap", "nodev"}
 	shmDir               = "shm"
 	kataEphemeralDevType = "ephemeral"
@@ -821,8 +822,13 @@ func (k *kataAgent) appendDevices(deviceList []*grpc.Device, c *Container) []*gr
 		}
 
 		if d.SCSIAddr == "" {
-			kataDevice.Type = kataBlkDevType
-			kataDevice.Id = d.PCIAddr
+			if d.NvdimmID != "" {
+				kataDevice.Type = kataNvdimmDevType
+				kataDevice.VmPath = fmt.Sprintf("/dev/pmem%s", d.NvdimmID)
+			} else {
+				kataDevice.Type = kataBlkDevType
+				kataDevice.Id = d.PCIAddr
+			}
 		} else {
 			kataDevice.Type = kataSCSIDevType
 			kataDevice.Id = d.SCSIAddr
