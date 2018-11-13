@@ -1704,6 +1704,8 @@ func (s *Sandbox) HotplugAddDevice(device api.Device, devType config.DeviceType)
 		}
 		return nil
 	case config.DeviceBlock:
+		fallthrough
+	case config.DeviceNVDIMM:
 		blockDevice, ok := device.(*drivers.BlockDevice)
 		if !ok {
 			return fmt.Errorf("device type mismatch, expect device type to be %s", devType)

@@ -799,6 +799,7 @@ func (k *kataAgent) handleShm(grpcSpec *grpc.Spec, sandbox *Sandbox) {
 }
 
 func (k *kataAgent) appendDevices(deviceList []*grpc.Device, c *Container) []*grpc.Device {
+	return deviceList
 	for _, dev := range c.devices {
 		device := c.sandbox.devManager.GetDeviceByID(dev.ID)
 		if device == nil {
@@ -806,7 +807,7 @@ func (k *kataAgent) appendDevices(deviceList []*grpc.Device, c *Container) []*gr
 			return nil
 		}
 
-		if device.DeviceType() != config.DeviceBlock {
+		if device.DeviceType() == config.DeviceBlock {
 			continue
 		}
 
@@ -1001,6 +1002,7 @@ func (k *kataAgent) createContainer(sandbox *Sandbox, c *Container) (p *Process,
 		SandboxPidns: sharedPidNs,
 	}
 
+	k.Logger().Infoln("tea1", ctrDevices)
 	if _, err = k.sendReq(req); err != nil {
 		return nil, err
 	}

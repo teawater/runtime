@@ -21,6 +21,9 @@ import (
 
 	"github.com/kata-containers/runtime/virtcontainers/device/config"
 	"github.com/kata-containers/runtime/virtcontainers/utils"
+	"golang.org/x/sys/unix"
+	"syscall"
+	"unsafe"
 )
 
 // romFile is the file name of the ROM that can be used for virtio-pci devices.
@@ -753,6 +756,19 @@ func (q *qemu) hotplugBlockDevice(drive *config.BlockDrive, op operation) error 
 			if err = q.qmpMonitorCh.qmp.ExecutePCIDeviceAdd(q.qmpMonitorCh.ctx, drive.ID, devID, driver, addr, bridge.ID, romFile, true); err != nil {
 				return err
 			}
+		} else if q.config.BlockDeviceDriver == NVDIMM {
+			var blocksize int64
+			file, err := os.Open(drive.File)
+			if err != nil {
+				return err
+			}
+			if _, _, err := syscall.Syscall(syscall.SYS_IOCTL, file.Fd(), unix.BLKGETSIZE64, uintptr(unsafe.Pointer(&blocksize))); err != 0 {
+				return err
+			}
+			if err = q.qmpMonitorCh.qmp.ExecuteNVDIMMDeviceAdd(q.qmpMonitorCh.ctx, drive.ID, drive.File, blocksize); err != nil {
+				q.Logger().WithError(err).Errorf("Failed to add NVDIMM device %s", drive.File)
+				return err
+			}
 		} else {
 			driver := "scsi-hd"
 
@@ -774,6 +790,8 @@ func (q *qemu) hotplugBlockDevice(drive *config.BlockDrive, op operation) error 
 			if err := q.removeDeviceFromBridge(drive.ID); err != nil {
 				return err
 			}
+		} else if q.config.BlockDeviceDriver == NVDIMM {
+			return nil
 		}
 
 		if err := q.qmpMonitorCh.qmp.ExecuteDeviceDel(q.qmpMonitorCh.ctx, devID); err != nil {
@@ -1302,7 +1320,7 @@ func genericBridges(number uint32, machineType string) []Bridge {
 func genericMemoryTopology(memoryMb, hostMemoryMb uint64, slots uint8) govmmQemu.Memory {
 	// NVDIMM device needs memory space 1024MB
 	// See https://github.com/clearcontainers/runtime/issues/380
-	memoryOffset := 1024
+	memoryOffset := 8192
 
 	// add 1G memory space for nvdimm device (vm guest image)
 	memMax := fmt.Sprintf("%dM", hostMemoryMb+uint64(memoryOffset))

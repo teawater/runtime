@@ -25,6 +25,8 @@ const (
 	// DeviceBlock is the block device type
 	DeviceBlock DeviceType = "block"
 
+	DeviceNVDIMM DeviceType = "nvdimm"
+
 	// DeviceGeneric is a generic device type
 	DeviceGeneric DeviceType = "generic"
 
