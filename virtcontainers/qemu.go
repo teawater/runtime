@@ -1320,7 +1320,7 @@ func genericBridges(number uint32, machineType string) []Bridge {
 func genericMemoryTopology(memoryMb, hostMemoryMb uint64, slots uint8) govmmQemu.Memory {
 	// NVDIMM device needs memory space 1024MB
 	// See https://github.com/clearcontainers/runtime/issues/380
-	memoryOffset := 8192
+	memoryOffset := 1024*200
 
 	// add 1G memory space for nvdimm device (vm guest image)
 	memMax := fmt.Sprintf("%dM", hostMemoryMb+uint64(memoryOffset))
