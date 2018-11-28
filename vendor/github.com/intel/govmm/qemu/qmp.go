@@ -1203,6 +1203,41 @@ func (q *QMP) ExecHotplugMemory(ctx context.Context, qomtype, id, mempath string
 	return err
 }
 
+func (q *QMP) ExecuteNVDIMMDeviceAdd(ctx context.Context, id, mempath string, size int64) error {
+	args := map[string]interface{}{
+		"qom-type": "memory-backend-file",
+		"id":       "nvdimmbackmem" + id,
+		"props": map[string]interface{}{
+			"mem-path": mempath,
+			"size":     size,
+			"share":    true,
+		},
+	}
+	err := q.executeCommand(ctx, "object-add", args, nil)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if err != nil {
+			q.cfg.Logger.Errorf("Unable to hotplug NVDIMM device: %v", err)
+			err = q.executeCommand(ctx, "object-del", map[string]interface{}{"id": "nvdimmbackmem" + id}, nil)
+			if err != nil {
+				q.cfg.Logger.Warningf("Unable to clean up memory object: %v", err)
+			}
+		}
+	}()
+
+	args = map[string]interface{}{
+		"driver": "nvdimm",
+		"id":     "nvdimm" + id,
+		"memdev": "nvdimmbackmem" + id,
+	}
+	err = q.executeCommand(ctx, "device_add", args, nil)
+
+	return err
+}
+
 // ExecuteBalloon sets the size of the balloon, hence updates the memory
 // allocated for the VM.
 func (q *QMP) ExecuteBalloon(ctx context.Context, bytes uint64) error {
