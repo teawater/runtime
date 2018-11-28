@@ -90,6 +90,7 @@ type hypervisor struct {
 	DefaultMaxVCPUs       uint32 `toml:"default_maxvcpus"`
 	MemorySize            uint32 `toml:"default_memory"`
 	MemSlots              uint32 `toml:"memory_slots"`
+	MemOffset             uint32 `toml:"memory_offset"`
 	DefaultBridges        uint32 `toml:"default_bridges"`
 	Msize9p               uint32 `toml:"msize_9p"`
 	DisableBlockDeviceUse bool   `toml:"disable_block_device_use"`
@@ -272,6 +273,15 @@ func (h hypervisor) defaultMemSlots() uint32 {
 	return slots
 }
 
+func (h hypervisor) defaultMemOffset() uint32 {
+	offset := h.MemOffset
+	if offset == 0 {
+		offset = defaultMemOffset
+	}
+
+	return offset
+}
+
 func (h hypervisor) defaultBridges() uint32 {
 	if h.DefaultBridges == 0 {
 		return defaultBridgesCount
@@ -425,6 +435,7 @@ func newQemuHypervisorConfig(h hypervisor) (vc.HypervisorConfig, error) {
 		DefaultMaxVCPUs:       h.defaultMaxVCPUs(),
 		MemorySize:            h.defaultMemSz(),
 		MemSlots:              h.defaultMemSlots(),
+		MemOffset:             h.defaultMemOffset(),
 		EntropySource:         h.GetEntropySource(),
 		DefaultBridges:        h.defaultBridges(),
 		DisableBlockDeviceUse: h.DisableBlockDeviceUse,
@@ -545,6 +556,7 @@ func initConfig(builtIn bool) (config oci.RuntimeConfig, err error) {
 		NumVCPUs:              defaultVCPUCount,
 		DefaultMaxVCPUs:       defaultMaxVCPUCount,
 		MemorySize:            defaultMemSize,
+		MemOffset:             defaultMemOffset,
 		DefaultBridges:        defaultBridgesCount,
 		MemPrealloc:           defaultEnableMemPrealloc,
 		HugePages:             defaultEnableHugePages,

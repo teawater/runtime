@@ -23,6 +23,7 @@ const defaultVCPUCount uint32 = 1
 const defaultMaxVCPUCount uint32 = 0
 const defaultMemSize uint32 = 2048 // MiB
 const defaultMemSlots uint32 = 10
+const defaultMemOffset uint32 = 1024 // MiB
 const defaultBridgesCount uint32 = 1
 const defaultInterNetworkingModel = "macvtap"
 const defaultDisableBlockDeviceUse bool = false

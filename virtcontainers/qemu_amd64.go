@@ -96,6 +96,9 @@ func newQemuArch(config HypervisorConfig) qemuArch {
 	}
 
 	q.handleImagePath(config)
+
+	q.memoryOffset = config.MemOffset
+
 	return q
 }
 
@@ -124,7 +127,7 @@ func (q *qemuAmd64) cpuModel() string {
 }
 
 func (q *qemuAmd64) memoryTopology(memoryMb, hostMemoryMb uint64, slots uint8) govmmQemu.Memory {
-	return genericMemoryTopology(memoryMb, hostMemoryMb, slots)
+	return genericMemoryTopology(memoryMb, hostMemoryMb, slots, q.memoryOffset)
 }
 
 func (q *qemuAmd64) appendImage(devices []govmmQemu.Device, path string) ([]govmmQemu.Device, error) {

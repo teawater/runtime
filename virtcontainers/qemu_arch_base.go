@@ -108,6 +108,7 @@ type qemuArchBase struct {
 	kernelParamsNonDebug  []Param
 	kernelParamsDebug     []Param
 	kernelParams          []Param
+	memoryOffset          uint32
 }
 
 const (
