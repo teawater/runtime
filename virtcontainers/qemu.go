@@ -15,12 +15,11 @@ import (
 	"time"
 
 	govmmQemu "github.com/intel/govmm/qemu"
-	"github.com/kata-containers/runtime/virtcontainers/pkg/uuid"
-	opentracing "github.com/opentracing/opentracing-go"
-	"github.com/sirupsen/logrus"
-
 	"github.com/kata-containers/runtime/virtcontainers/device/config"
+	"github.com/kata-containers/runtime/virtcontainers/pkg/uuid"
 	"github.com/kata-containers/runtime/virtcontainers/utils"
+	"github.com/opentracing/opentracing-go"
+	"github.com/sirupsen/logrus"
 )
 
 // romFile is the file name of the ROM that can be used for virtio-pci devices.
@@ -72,6 +71,8 @@ type qemu struct {
 	fds []*os.File
 
 	ctx context.Context
+
+	nvdimmCount int
 }
 
 const (
@@ -221,6 +222,20 @@ func (q *qemu) init(ctx context.Context, id string, hypervisorConfig *Hypervisor
 	q.storage = storage
 	q.config = *hypervisorConfig
 	q.arch = newQemuArch(q.config)
+
+	initrdPath, err := q.config.InitrdAssetPath()
+	if err != nil {
+		return err
+	}
+	imagePath, err := q.config.ImageAssetPath()
+	if err != nil {
+		return err
+	}
+	if initrdPath == "" && imagePath != "" {
+		q.nvdimmCount = 1
+	} else {
+		q.nvdimmCount = 0
+	}
 
 	if err = q.storage.fetchHypervisorState(q.id, &q.state); err != nil {
 		q.Logger().Debug("Creating bridges")
@@ -735,6 +750,19 @@ func (q *qemu) hotplugBlockDevice(drive *config.BlockDrive, op operation) error 
 
 	devID := "virtio-" + drive.ID
 
+	if q.config.BlockDeviceDriver == Nvdimm {
+		if op == addDevice {
+			if err = q.qmpMonitorCh.qmp.ExecuteNVDIMMDeviceAdd(q.qmpMonitorCh.ctx, drive.ID, drive.File, drive.NvdimmSize); err != nil {
+				q.Logger().WithError(err).Errorf("Failed to add NVDIMM device %s", drive.File)
+				return err
+			}
+			drive.NvdimmID = strconv.Itoa(q.nvdimmCount)
+			q.nvdimmCount++
+		}
+
+		return nil
+	}
+
 	if op == addDevice {
 		if q.config.BlockDeviceCacheSet {
 			err = q.qmpMonitorCh.qmp.ExecuteBlockdevAddWithCache(q.qmpMonitorCh.ctx, drive.File, drive.ID, q.config.BlockDeviceCacheDirect, q.config.BlockDeviceCacheNoflush)
@@ -779,6 +807,8 @@ func (q *qemu) hotplugBlockDevice(drive *config.BlockDrive, op operation) error 
 			if err := q.removeDeviceFromBridge(drive.ID); err != nil {
 				return err
 			}
+		} else if q.config.BlockDeviceDriver == Nvdimm {
+			return nil
 		}
 
 		if err := q.qmpMonitorCh.qmp.ExecuteDeviceDel(q.qmpMonitorCh.ctx, devID); err != nil {

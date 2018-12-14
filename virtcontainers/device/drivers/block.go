@@ -8,10 +8,15 @@ package drivers
 
 import (
 	"path/filepath"
+	"os"
+	"syscall"
+	"unsafe"
 
 	"github.com/kata-containers/runtime/virtcontainers/device/api"
 	"github.com/kata-containers/runtime/virtcontainers/device/config"
 	"github.com/kata-containers/runtime/virtcontainers/utils"
+
+	"golang.org/x/sys/unix"
 )
 
 const maxDevIDSize = 31
@@ -73,8 +78,18 @@ func (device *BlockDevice) Attach(devReceiver api.DeviceReceiver) (err error) {
 	}
 
 	customOptions := device.DeviceInfo.DriverOptions
-	if customOptions != nil && customOptions["block-driver"] == "virtio-blk" {
-		drive.VirtPath = filepath.Join("/dev", driveName)
+	if customOptions != nil && (customOptions["block-driver"] == "virtio-blk" || customOptions["block-driver"] == "nvdimm") {
+		if customOptions["block-driver"] == "virtio-blk" {
+			drive.VirtPath = filepath.Join("/dev", driveName)
+		} else {
+			file, err := os.Open(drive.File)
+			if err != nil {
+				return err
+			}
+			if _, _, err := syscall.Syscall(syscall.SYS_IOCTL, file.Fd(), unix.BLKGETSIZE64, uintptr(unsafe.Pointer(&drive.NvdimmSize))); err != 0 {
+				return err
+			}
+		}
 	} else {
 		scsiAddr, err := utils.GetSCSIAddress(index)
 		if err != nil {
@@ -84,7 +99,7 @@ func (device *BlockDevice) Attach(devReceiver api.DeviceReceiver) (err error) {
 		drive.SCSIAddr = scsiAddr
 	}
 
-	deviceLogger().WithField("device", device.DeviceInfo.HostPath).Info("Attaching block device")
+	deviceLogger().WithField("device", device.DeviceInfo.HostPath).WithField("VirtPath", drive.VirtPath).Infof("Attaching %s device", customOptions["block-driver"])
 	device.BlockDrive = drive
 	if err = devReceiver.HotplugAddDevice(device, config.DeviceBlock); err != nil {
 		return err

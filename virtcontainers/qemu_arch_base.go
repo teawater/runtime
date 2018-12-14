@@ -134,6 +134,9 @@ const (
 
 	// VirtioSCSI means use virtio-scsi for hotplugging drives
 	VirtioSCSI = "virtio-scsi"
+
+	// Nvdimm means use nvdimm for hotplugging drives
+	Nvdimm = "nvdimm"
 )
 
 const (

@@ -105,6 +105,12 @@ type BlockDrive struct {
 	// SCSI address is in the format SCSI-Id:LUN
 	SCSIAddr string
 
+	// NvdimmID is the nvdimm id inside the VM
+	NvdimmID string
+
+	// NvdimmSize is the size of the block device.
+	NvdimmSize int64
+
 	// VirtPath at which the device appears inside the VM, outside of the container mount namespace
 	VirtPath string
 }
