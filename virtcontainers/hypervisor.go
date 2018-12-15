@@ -155,6 +155,10 @@ type HypervisorConfig struct {
 	// MemSlots specifies default memory slots the VM.
 	MemSlots uint32
 
+	// MemoryOffset will be plused to max memory of hypervisor.
+	// It is the memory address space for the NVDIMM devie.
+	MemoryOffset uint64
+
 	// KernelParams are additional guest kernel parameters.
 	KernelParams []Param
 

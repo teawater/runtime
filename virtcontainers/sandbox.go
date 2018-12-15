@@ -740,6 +740,20 @@ func (s *Sandbox) getAndStoreGuestDetails() error {
 	return nil
 }
 
+func setupMemoryOffset(s *Sandbox, devices []api.Device) error {
+	for _, dev := range devices {
+		if dev.DeviceType() == config.DeviceBlock {
+			blockDevice, ok := dev.(*drivers.BlockDevice)
+			if !ok {
+				return fmt.Errorf("device type mismatch, expect device type to be %s", config.DeviceBlock)
+			}
+			s.config.HypervisorConfig.MemoryOffset += uint64(blockDevice.BlockDrive.NvdimmSize / 1024 / 1024)
+			s.Logger().Info("tea1", s.config.HypervisorConfig.MemoryOffset, blockDevice.BlockDrive.NvdimmSize)
+		}
+	}
+	return nil
+}
+
 // createSandbox creates a sandbox from a sandbox description, the containers list, the hypervisor
 // and the agent passed through the Config structure.
 // It will create and store the sandbox structure, and then ask the hypervisor
@@ -769,6 +783,13 @@ func createSandbox(ctx context.Context, sandboxConfig SandboxConfig, factory Fac
 		s.Logger().WithError(err).WithField("sandboxid", s.id).Warning("fetch sandbox device failed")
 	}
 	s.devManager = deviceManager.NewDeviceManager(sandboxConfig.HypervisorConfig.BlockDeviceDriver, devices)
+
+	s.Logger().Info("tea3", devices)
+	err = setupMemoryOffset(s, devices)
+	if err != nil {
+		s.Logger().WithError(err).Warning("fetch sandbox device failed")
+		return nil, err
+	}
 
 	// We first try to fetch the sandbox state from storage.
 	// If it exists, this means this is a re-creation, i.e.

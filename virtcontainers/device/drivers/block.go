@@ -89,6 +89,7 @@ func (device *BlockDevice) Attach(devReceiver api.DeviceReceiver) (err error) {
 			if _, _, err := syscall.Syscall(syscall.SYS_IOCTL, file.Fd(), unix.BLKGETSIZE64, uintptr(unsafe.Pointer(&drive.NvdimmSize))); err != 0 {
 				return err
 			}
+			deviceLogger().Info("tea2", drive.File, drive.NvdimmSize)
 		}
 	} else {
 		scsiAddr, err := utils.GetSCSIAddress(index)
