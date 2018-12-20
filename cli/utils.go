@@ -13,10 +13,6 @@ import (
 	"github.com/kata-containers/runtime/pkg/katautils"
 )
 
-const (
-	unknown = "<<unknown>>"
-)
-
 // variables to allow tests to modify the values
 var (
 	procVersion = "/proc/version"
@@ -79,11 +75,11 @@ func getDistroDetails() (name, version string, err error) {
 	}
 
 	if name == "" {
-		name = unknown
+		name = katautils.Unknown
 	}
 
 	if version == "" {
-		version = unknown
+		version = katautils.Unknown
 	}
 
 	return name, version, nil

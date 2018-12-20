@@ -409,30 +409,7 @@ func commandNotFound(c *cli.Context, command string) {
 // makeVersionString returns a multi-line string describing the runtime
 // version along with the version of the OCI specification it supports.
 func makeVersionString() string {
-	v := make([]string, 0, 3)
-
-	versionStr := version
-	if versionStr == "" {
-		versionStr = unknown
-	}
-
-	v = append(v, name+"  : "+versionStr)
-
-	commitStr := commit
-	if commitStr == "" {
-		commitStr = unknown
-	}
-
-	v = append(v, "   commit   : "+commitStr)
-
-	specVersionStr := specs.Version
-	if specVersionStr == "" {
-		specVersionStr = unknown
-	}
-
-	v = append(v, "   OCI specs: "+specVersionStr)
-
-	return strings.Join(v, "\n")
+	return katautils.MakeVersionString(name, version, commit, specs.Version)
 }
 
 // setCLIGlobals modifies various cli package global variables

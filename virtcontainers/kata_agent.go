@@ -221,7 +221,7 @@ func (k *kataAgent) capabilities() types.Capabilities {
 	return caps
 }
 
-func (k *kataAgent) configure(h hypervisor, id, sharePath string, builtin bool, config interface{}) error {
+func (k *kataAgent) internalConfigure(fromGrpc bool, h hypervisor, id, sharePath string, builtin bool, config interface{}) error {
 	if config != nil {
 		switch c := config.(type) {
 		case KataAgentConfig:
@@ -232,6 +232,14 @@ func (k *kataAgent) configure(h hypervisor, id, sharePath string, builtin bool, 
 		default:
 			return fmt.Errorf("Invalid config type")
 		}
+	}
+
+	if builtin {
+		k.proxyBuiltIn = true
+	}
+
+	if fromGrpc {
+		return nil
 	}
 
 	switch s := k.vmSocket.(type) {
@@ -255,10 +263,6 @@ func (k *kataAgent) configure(h hypervisor, id, sharePath string, builtin bool, 
 		return fmt.Errorf("Invalid config type")
 	}
 
-	if builtin {
-		k.proxyBuiltIn = true
-	}
-
 	// Neither create shared directory nor add 9p device if hypervisor
 	// doesn't support filesystem sharing.
 	caps := h.capabilities()
@@ -278,6 +282,14 @@ func (k *kataAgent) configure(h hypervisor, id, sharePath string, builtin bool, 
 	}
 
 	return h.addDevice(sharedVolume, fsDev)
+}
+
+func (k *kataAgent) configure(h hypervisor, id, sharePath string, builtin bool, config interface{}) error {
+	return k.internalConfigure(false, h, id, sharePath, builtin, config)
+}
+
+func (k *kataAgent) configureFromGrpc(id string, builtin bool, config interface{}) error {
+	return k.internalConfigure(true, nil, id, "", builtin, config)
 }
 
 func (k *kataAgent) createSandbox(sandbox *Sandbox) error {
@@ -585,6 +597,12 @@ func (k *kataAgent) setProxy(sandbox *Sandbox, proxy proxy, pid int, url string)
 	}
 
 	return nil
+}
+
+func (k *kataAgent) setProxyFromGrpc(proxy proxy, pid int, url string) {
+	k.proxy = proxy
+	k.state.ProxyPid = pid
+	k.state.URL = url
 }
 
 func (k *kataAgent) startSandbox(sandbox *Sandbox) error {

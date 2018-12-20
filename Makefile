@@ -183,6 +183,10 @@ SHIMV2 = containerd-shim-kata-v2
 SHIMV2_OUTPUT = $(CURDIR)/$(SHIMV2)
 SHIMV2_DIR = $(CLI_DIR)/$(SHIMV2)
 
+VMCACHE = kata-vmcache
+VMCACHE_OUTPUT = $(CURDIR)/$(VMCACHE)
+VMCACHE_DIR = $(CLI_DIR)/$(VMCACHE)
+
 SOURCES := $(shell find . 2>&1 | grep -E '.*\.(c|h|go)$$')
 VERSION := ${shell cat ./VERSION}
 COMMIT_NO := $(shell git rev-parse HEAD 2> /dev/null || true)
@@ -357,7 +361,7 @@ define SHOW_ARCH
   $(shell printf "\\t%s%s\\\n" "$(1)" $(if $(filter $(ARCH),$(1))," (default)",""))
 endef
 
-all: runtime containerd-shim-v2 netmon
+all: runtime containerd-shim-v2 netmon $(VMCACHE)
 
 containerd-shim-v2: $(SHIMV2_OUTPUT)
 
@@ -365,6 +369,11 @@ netmon: $(NETMON_TARGET_OUTPUT)
 
 $(NETMON_TARGET_OUTPUT): $(SOURCES)
 	$(QUIET_BUILD)(cd $(NETMON_DIR) && go build $(BUILDFLAGS) -o $@ -ldflags "-X main.version=$(VERSION)")
+
+$(VMCACHE): $(VMCACHE_OUTPUT)
+
+$(VMCACHE_OUTPUT): $(TARGET_OUTPUT)
+	$(QUIET_BUILD)(cd $(VMCACHE_DIR)/ && go build -i -o $@ .)
 
 runtime: $(TARGET_OUTPUT) $(CONFIGS)
 .DEFAULT: default
@@ -420,6 +429,45 @@ endef
 
 export GENERATED_CODE
 
+define VMCACHE_GENERATED_CODE
+// WARNING: This file is auto-generated - DO NOT EDIT!
+//
+// Note that some variables are "var" to allow them to be modified
+// by the tests.
+package main
+
+import (
+	"fmt"
+)
+
+// name is the name of the runtime
+const name = "$(VMCACHE)"
+
+// name of the project
+const project = "$(PROJECT_NAME)"
+
+// prefix used to denote non-standard CLI commands and options.
+const projectPrefix = "$(PROJECT_TYPE)"
+
+// commit is the git commit the runtime is compiled from.
+var commit = "$(COMMIT)"
+
+// version is the runtime version.
+var version = "$(VERSION)"
+
+// project-specific option names
+var configFilePathOption = fmt.Sprintf("%s-config", projectPrefix)
+
+// Default config file used by stateless systems.
+var defaultRuntimeConfiguration = "$(CONFIG_PATH)"
+
+// Alternate config file that takes precedence over
+// defaultRuntimeConfiguration.
+var defaultSysConfRuntimeConfiguration = "$(SYSCONFIG)"
+endef
+
+export VMCACHE_GENERATED_CODE
+
 #Install an executable file
 # params:
 # $1 : file to install
@@ -443,11 +491,15 @@ $(if $(findstring uncompressed,$1),vmlinux.container,vmlinuz.container)
 endef
 
 GENERATED_CONFIG = $(CLI_DIR)/config-generated.go
+VMCACHE_GENERATED_CONFIG = $(VMCACHE_DIR)/config-generated.go
 
-GENERATED_GO_FILES += $(GENERATED_CONFIG)
+GENERATED_GO_FILES += $(GENERATED_CONFIG) $(VMCACHE_GENERATED_CONFIG)
 
 $(GENERATED_CONFIG): Makefile VERSION
 	$(QUIET_GENERATE)echo "$$GENERATED_CODE" >$@
+
+$(VMCACHE_GENERATED_CONFIG): Makefile VERSION
+	$(QUIET_GENERATE)echo "$$VMCACHE_GENERATED_CODE" >$@
 
 $(TARGET_OUTPUT): $(EXTRA_DEPS) $(SOURCES) $(GENERATED_GO_FILES) $(GENERATED_FILES) Makefile | show-summary
 	$(QUIET_BUILD)(cd $(CLI_DIR) && go build $(BUILDFLAGS) -o $@ .)
@@ -539,12 +591,15 @@ check-go-static:
 coverage:
 	$(QUIET_TEST).ci/go-test.sh html-coverage
 
-install: default runtime install-scripts install-completions install-configs install-bin install-containerd-shim-v2 install-bin-libexec
+install: default runtime install-scripts install-completions install-configs install-bin install-containerd-shim-v2 install-kata-vmcache install-bin-libexec
 
 install-bin: $(BINLIST)
 	$(QUIET_INST)$(foreach f,$(BINLIST),$(call INSTALL_EXEC,$f,$(BINDIR)))
 
 install-containerd-shim-v2: $(SHIMV2)
+	$(QUIET_INST)$(call INSTALL_EXEC,$<,$(BINDIR))
+
+install-kata-vmcache: $(VMCACHE)
 	$(QUIET_INST)$(call INSTALL_EXEC,$<,$(BINDIR))
 
 install-bin-libexec: $(BINLIBEXECLIST)
@@ -561,7 +616,7 @@ install-completions:
 	$(QUIET_INST)install --mode 0644 -D  $(BASH_COMPLETIONS) $(DESTDIR)/$(BASH_COMPLETIONSDIR)/$(notdir $(BASH_COMPLETIONS));
 
 clean:
-	$(QUIET_CLEAN)rm -f $(TARGET) $(SHIMV2) $(NETMON_TARGET) $(CONFIGS) $(GENERATED_GO_FILES) $(GENERATED_FILES) $(COLLECT_SCRIPT)
+	$(QUIET_CLEAN)rm -f $(TARGET) $(SHIMV2) $(VMCACHE_OUTPUT) $(NETMON_TARGET) $(CONFIGS) $(GENERATED_GO_FILES) $(GENERATED_FILES) $(COLLECT_SCRIPT)
 
 show-usage: show-header
 	@printf "• Overview:\n"
@@ -635,6 +690,8 @@ endif
           "$(foreach b,$(sort $(BINLIST)),$(shell printf "\\t - $(shell readlink -m $(DESTDIR)/$(BINDIR)/$(b))\\\n"))"
 	@printf \
           "$(foreach b,$(sort $(SHIMV2)),$(shell printf "\\t - $(shell readlink -m $(DESTDIR)/$(BINDIR)/$(b))\\\n"))"
+	@printf \
+          "$(foreach b,$(sort $(VMCACHE)),$(shell printf "\\t - $(shell readlink -m $(DESTDIR)/$(BINDIR)/$(b))\\\n"))"
 	@printf \
           "$(foreach b,$(sort $(BINLIBEXECLIST)),$(shell printf "\\t - $(shell readlink -m $(DESTDIR)/$(PKGLIBEXECDIR)/$(b))\\\n"))"
 	@printf \
