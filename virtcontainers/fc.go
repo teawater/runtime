@@ -7,6 +7,7 @@ package virtcontainers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os/exec"
 	"path/filepath"
@@ -693,4 +694,12 @@ func (fc *firecracker) getThreadIDs() (*threadIDs, error) {
 
 func (fc *firecracker) cleanup() error {
 	return nil
+}
+
+func (fc *firecracker) fromGrpc(ctx context.Context, hypervisorConfig *HypervisorConfig, storage resourceStorage, j []byte) error {
+	return errors.New("firecracker is not supported by VM cache")
+}
+
+func (fc *firecracker) toGrpc() ([]byte, error) {
+	return nil, errors.New("firecracker is not supported by VM cache")
 }

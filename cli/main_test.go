@@ -867,7 +867,7 @@ func TestMainMakeVersionStringNoVersion(t *testing.T) {
 
 	v := makeVersionString()
 
-	testVersionString(assert, v, unknown, commit, specs.Version)
+	testVersionString(assert, v, katautils.Unknown, commit, specs.Version)
 }
 
 func TestMainMakeVersionStringNoCommit(t *testing.T) {
@@ -882,7 +882,7 @@ func TestMainMakeVersionStringNoCommit(t *testing.T) {
 
 	v := makeVersionString()
 
-	testVersionString(assert, v, version, unknown, specs.Version)
+	testVersionString(assert, v, version, katautils.Unknown, specs.Version)
 }
 
 func TestMainMakeVersionStringNoOCIVersion(t *testing.T) {
@@ -897,7 +897,7 @@ func TestMainMakeVersionStringNoOCIVersion(t *testing.T) {
 
 	v := makeVersionString()
 
-	testVersionString(assert, v, version, commit, unknown)
+	testVersionString(assert, v, version, commit, katautils.Unknown)
 }
 
 func TestMainCreateRuntimeApp(t *testing.T) {

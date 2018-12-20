@@ -543,7 +543,7 @@ func TestEnvGetEnvInfoNoHypervisorVersion(t *testing.T) {
 	err = os.Remove(config.HypervisorConfig.HypervisorPath)
 	assert.NoError(err)
 
-	expectedEnv.Hypervisor.Version = unknown
+	expectedEnv.Hypervisor.Version = katautils.Unknown
 
 	env, err := getEnvInfo(configFile, config)
 	assert.NoError(err)
@@ -696,7 +696,7 @@ func TestEnvGetProxyInfoNoVersion(t *testing.T) {
 	err = os.Remove(config.ProxyConfig.Path)
 	assert.NoError(t, err)
 
-	expectedProxy.Version = unknown
+	expectedProxy.Version = katautils.Unknown
 
 	proxy, err := getProxyInfo(config)
 	assert.NoError(t, err)
@@ -740,7 +740,7 @@ func TestEnvGetNetmonInfoNoVersion(t *testing.T) {
 	err = os.Remove(config.NetmonConfig.Path)
 	assert.NoError(t, err)
 
-	expectedNetmon.Version = unknown
+	expectedNetmon.Version = katautils.Unknown
 
 	netmon, err := getNetmonInfo(config)
 	assert.NoError(t, err)
@@ -787,7 +787,7 @@ func TestEnvGetShimInfoNoVersion(t *testing.T) {
 	exit 1`)
 	assert.NoError(t, err)
 
-	expectedShim.Version = unknown
+	expectedShim.Version = katautils.Unknown
 
 	shim, err := getShimInfo(config)
 	assert.NoError(t, err)
@@ -1227,5 +1227,5 @@ func TestGetHypervisorInfo(t *testing.T) {
 	assert.NoError(err)
 
 	info = getHypervisorInfo(config)
-	assert.Equal(info.Version, unknown)
+	assert.Equal(info.Version, katautils.Unknown)
 }

@@ -247,7 +247,7 @@ func getProxyInfo(config oci.RuntimeConfig) (ProxyInfo, error) {
 	proxyConfig := config.ProxyConfig
 	version, err := getCommandVersion(proxyConfig.Path)
 	if err != nil {
-		version = unknown
+		version = katautils.Unknown
 	}
 
 	proxy := ProxyInfo{
@@ -265,7 +265,7 @@ func getNetmonInfo(config oci.RuntimeConfig) (NetmonInfo, error) {
 
 	version, err := getCommandVersion(netmonConfig.Path)
 	if err != nil {
-		version = unknown
+		version = katautils.Unknown
 	}
 
 	netmon := NetmonInfo{
@@ -292,7 +292,7 @@ func getShimInfo(config oci.RuntimeConfig) (ShimInfo, error) {
 
 	version, err := getCommandVersion(shimPath)
 	if err != nil {
-		version = unknown
+		version = katautils.Unknown
 	}
 
 	shim := ShimInfo{
@@ -318,7 +318,7 @@ func getHypervisorInfo(config oci.RuntimeConfig) HypervisorInfo {
 
 	version, err := getCommandVersion(hypervisorPath)
 	if err != nil {
-		version = unknown
+		version = katautils.Unknown
 	}
 
 	return HypervisorInfo{

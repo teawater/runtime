@@ -18,6 +18,9 @@ import (
 
 const (
 	k8sEmptyDir = "kubernetes.io~empty-dir"
+
+	// Unknown is set to the unknown item of the kata version string.
+	Unknown = "<<unknown>>"
 )
 
 // FileExists test is a file exiting or not
@@ -133,4 +136,27 @@ func RunCommandFull(args []string, includeStderr bool) (string, error) {
 // RunCommand returns the commands space-trimmed standard output on success
 func RunCommand(args []string) (string, error) {
 	return RunCommandFull(args, false)
+}
+
+// MakeVersionString returns a multi-line string describing the kata
+// version.
+func MakeVersionString(nameStr, versionStr, commitStr, specVersionStr string) string {
+	v := make([]string, 0, 3)
+
+	if versionStr == "" {
+		versionStr = Unknown
+	}
+	v = append(v, nameStr+"  : "+versionStr)
+
+	if commitStr == "" {
+		commitStr = Unknown
+	}
+	v = append(v, "   commit   : "+commitStr)
+
+	if specVersionStr == "" {
+		specVersionStr = Unknown
+	}
+	v = append(v, "   OCI specs: "+specVersionStr)
+
+	return strings.Join(v, "\n")
 }

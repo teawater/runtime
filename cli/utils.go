@@ -13,10 +13,6 @@ import (
 	"github.com/kata-containers/runtime/pkg/katautils"
 )
 
-const (
-	unknown = "<<unknown>>"
-)
-
 // variables to allow tests to modify the values
 var (
 	procVersion = "/proc/version"
