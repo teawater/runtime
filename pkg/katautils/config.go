@@ -77,7 +77,9 @@ type tomlConfig struct {
 }
 
 type factory struct {
-	Template bool `toml:"enable_template"`
+	Template        bool   `toml:"enable_template"`
+	VMCache         bool   `toml:"enable_vm_cache"`
+	VMCacheEndpoint string `toml:"vm_cache_endpoint"`
 }
 
 type hypervisor struct {
@@ -548,7 +550,14 @@ func newQemuHypervisorConfig(h hypervisor) (vc.HypervisorConfig, error) {
 }
 
 func newFactoryConfig(f factory) (oci.FactoryConfig, error) {
-	return oci.FactoryConfig{Template: f.Template}, nil
+	if f.VMCacheEndpoint == "" {
+		f.VMCacheEndpoint = defaultVMCacheEndpoint
+	}
+	return oci.FactoryConfig{
+		Template:        f.Template,
+		VMCache:         f.VMCache,
+		VMCacheEndpoint: f.VMCacheEndpoint,
+	}, nil
 }
 
 func newShimConfig(s shim) (vc.ShimConfig, error) {
@@ -912,6 +921,10 @@ func checkNetNsConfig(config oci.RuntimeConfig) error {
 
 // checkFactoryConfig ensures the VM factory configuration is valid.
 func checkFactoryConfig(config oci.RuntimeConfig) error {
+	if config.FactoryConfig.Template && config.FactoryConfig.VMCache {
+		return errors.New("VM factory cannot work together with VM cache")
+	}
+
 	if config.FactoryConfig.Template {
 		if config.HypervisorConfig.InitrdPath == "" {
 			return errors.New("Factory option enable_template requires an initrd image")
@@ -919,6 +932,18 @@ func checkFactoryConfig(config oci.RuntimeConfig) error {
 
 		if config.HypervisorConfig.UseVSock {
 			return errors.New("config vsock conflicts with factory, please disable one of them")
+		}
+	}
+
+	if config.FactoryConfig.VMCache {
+		if config.HypervisorType != vc.QemuHypervisor {
+			return errors.New("VM cache just support qemu")
+		}
+		if config.AgentType != vc.KataContainersAgent {
+			return errors.New("VM cache just support kata agent")
+		}
+		if config.HypervisorConfig.UseVSock {
+			return errors.New("config vsock conflicts with VM cache, please disable one of them")
 		}
 	}
 

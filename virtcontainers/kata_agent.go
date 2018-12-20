@@ -220,7 +220,7 @@ func (k *kataAgent) capabilities() types.Capabilities {
 	return caps
 }
 
-func (k *kataAgent) configure(h hypervisor, id, sharePath string, builtin bool, config interface{}) error {
+func (k *kataAgent) internalConfigure(fromGrpc bool, h hypervisor, id, sharePath string, builtin bool, config interface{}) error {
 	if config != nil {
 		switch c := config.(type) {
 		case KataAgentConfig:
@@ -233,50 +233,63 @@ func (k *kataAgent) configure(h hypervisor, id, sharePath string, builtin bool, 
 		}
 	}
 
-	switch s := k.vmSocket.(type) {
-	case types.Socket:
-		err := h.addDevice(s, serialPortDev)
-		if err != nil {
-			return err
-		}
-	case kataVSOCK:
-		var err error
-		s.vhostFd, s.contextID, err = utils.FindContextID()
-		if err != nil {
-			return err
-		}
-		s.port = uint32(vSockPort)
-		if err := h.addDevice(s, vSockPCIDev); err != nil {
-			return err
-		}
-		k.vmSocket = s
-	default:
-		return fmt.Errorf("Invalid config type")
-	}
-
 	if builtin {
 		k.proxyBuiltIn = true
 	}
 
-	// Neither create shared directory nor add 9p device if hypervisor
-	// doesn't support filesystem sharing.
-	caps := h.capabilities()
-	if !caps.IsFsSharingSupported() {
-		return nil
+	var err error
+	if !fromGrpc {
+		switch s := k.vmSocket.(type) {
+		case types.Socket:
+			err = h.addDevice(s, serialPortDev)
+			if err != nil {
+				return err
+			}
+		case kataVSOCK:
+			var err error
+			s.vhostFd, s.contextID, err = utils.FindContextID()
+			if err != nil {
+				return err
+			}
+			s.port = uint32(vSockPort)
+			if err = h.addDevice(s, vSockPCIDev); err != nil {
+				return err
+			}
+			k.vmSocket = s
+		default:
+			return fmt.Errorf("Invalid config type")
+		}
+
+		// Neither create shared directory nor add 9p device if hypervisor
+		// doesn't support filesystem sharing.
+		caps := h.capabilities()
+		if !caps.IsFsSharingSupported() {
+			return nil
+		}
+
+		// Create shared directory and add the shared volume if filesystem sharing is supported.
+		// This volume contains all bind mounted container bundles.
+		sharedVolume := types.Volume{
+			MountTag: mountGuest9pTag,
+			HostPath: sharePath,
+		}
+
+		if err = os.MkdirAll(sharedVolume.HostPath, dirMode); err != nil {
+			return err
+		}
+
+		err = h.addDevice(sharedVolume, fsDev)
 	}
 
-	// Create shared directory and add the shared volume if filesystem sharing is supported.
-	// This volume contains all bind mounted container bundles.
-	sharedVolume := types.Volume{
-		MountTag: mountGuest9pTag,
-		HostPath: sharePath,
-	}
+	return err
+}
 
-	if err := os.MkdirAll(sharedVolume.HostPath, dirMode); err != nil {
-		return err
-	}
+func (k *kataAgent) configure(h hypervisor, id, sharePath string, builtin bool, config interface{}) error {
+	return k.internalConfigure(false, h, id, sharePath, builtin, config)
+}
 
-	return h.addDevice(sharedVolume, fsDev)
+func (k *kataAgent) configureFromGrpc(id string, builtin bool, config interface{}) error {
+	return k.internalConfigure(true, nil, id, "", builtin, config)
 }
 
 func (k *kataAgent) createSandbox(sandbox *Sandbox) error {
@@ -584,6 +597,12 @@ func (k *kataAgent) setProxy(sandbox *Sandbox, proxy proxy, pid int, url string)
 	}
 
 	return nil
+}
+
+func (k *kataAgent) setProxyFromGrpc(proxy proxy, pid int, url string) {
+	k.proxy = proxy
+	k.state.ProxyPid = pid
+	k.state.URL = url
 }
 
 func (k *kataAgent) startSandbox(sandbox *Sandbox) error {
