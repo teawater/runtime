@@ -7,6 +7,7 @@ package virtcontainers
 
 import (
 	"context"
+	"errors"
 	"os"
 )
 
@@ -96,4 +97,12 @@ func (m *mockHypervisor) getThreadIDs() (*threadIDs, error) {
 
 func (m *mockHypervisor) cleanup() error {
 	return nil
+}
+
+func (fc *mockHypervisor) fromGrpc(ctx context.Context, hypervisorConfig *HypervisorConfig, storage resourceStorage, j []byte) error {
+	return errors.New("mockHypervisor is not supported by VM cache")
+}
+
+func (fc *mockHypervisor) toGrpc() ([]byte, error) {
+	return nil, errors.New("firecracker is not supported by VM cache")
 }

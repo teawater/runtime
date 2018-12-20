@@ -15,6 +15,7 @@ import (
 	"testing"
 
 	govmmQemu "github.com/intel/govmm/qemu"
+	"github.com/kata-containers/runtime/virtcontainers/utils"
 	"github.com/kata-containers/runtime/virtcontainers/types"
 	"github.com/stretchr/testify/assert"
 )
@@ -399,4 +400,23 @@ func TestQemuCleanup(t *testing.T) {
 
 	err := q.cleanup()
 	assert.Nil(err)
+}
+
+func TestQemuGrpc(t *testing.T) {
+	assert := assert.New(t)
+
+	q := &qemu{
+		config: newQemuConfig(),
+	}
+
+	json, err := q.toGrpc()
+	assert.Nil(err)
+
+	var q2 qemu
+	err = q2.fromGrpc(json, nil, &filesystem{})
+	assert.Nil(err)
+
+	fmt.Println(*q)
+	fmt.Println(q2)
+	assert.True(utils.DeepCompare(q.config, q2.config))
 }

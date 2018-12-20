@@ -8,14 +8,15 @@ package factory
 import (
 	"context"
 	"fmt"
-	"reflect"
 
+	"github.com/kata-containers/runtime/virtcontainers/utils"
 	vc "github.com/kata-containers/runtime/virtcontainers"
 	"github.com/kata-containers/runtime/virtcontainers/factory/base"
 	"github.com/kata-containers/runtime/virtcontainers/factory/cache"
 	"github.com/kata-containers/runtime/virtcontainers/factory/direct"
+	"github.com/kata-containers/runtime/virtcontainers/factory/grpcCache"
 	"github.com/kata-containers/runtime/virtcontainers/factory/template"
-	opentracing "github.com/opentracing/opentracing-go"
+	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 )
 
@@ -24,7 +25,11 @@ var factoryLogger = logrus.FieldLogger(logrus.New())
 // Config is a collection of VM factory configurations.
 type Config struct {
 	Template bool
-	Cache    uint
+
+	Cache uint
+
+	VMCache         bool
+	VMCacheEndpoint string
 
 	VMConfig vc.VMConfig
 }
@@ -65,6 +70,11 @@ func NewFactory(ctx context.Context, config Config, fetchOnly bool) (vc.Factory,
 		} else {
 			b = template.New(ctx, config.VMConfig)
 		}
+	} else if config.VMCache && config.Cache == 0 {
+		b, err = grpcCache.New(ctx, config.VMCacheEndpoint)
+		if err != nil {
+			return nil, err
+		}
 	} else {
 		b = direct.New(ctx, config.VMConfig)
 	}
@@ -100,71 +110,6 @@ func resetHypervisorConfig(config *vc.VMConfig) {
 	config.ProxyConfig = vc.ProxyConfig{}
 }
 
-func compareStruct(foo, bar reflect.Value) bool {
-	for i := 0; i < foo.NumField(); i++ {
-		if !deepCompareValue(foo.Field(i), bar.Field(i)) {
-			return false
-		}
-	}
-
-	return true
-}
-
-func compareMap(foo, bar reflect.Value) bool {
-	if foo.Len() != bar.Len() {
-		return false
-	}
-
-	for _, k := range foo.MapKeys() {
-		if !deepCompareValue(foo.MapIndex(k), bar.MapIndex(k)) {
-			return false
-		}
-	}
-
-	return true
-}
-
-func compareSlice(foo, bar reflect.Value) bool {
-	if foo.Len() != bar.Len() {
-		return false
-	}
-	for j := 0; j < foo.Len(); j++ {
-		if !deepCompareValue(foo.Index(j), bar.Index(j)) {
-			return false
-		}
-	}
-	return true
-}
-
-func deepCompareValue(foo, bar reflect.Value) bool {
-	if !foo.IsValid() || !bar.IsValid() {
-		return foo.IsValid() == bar.IsValid()
-	}
-
-	if foo.Type() != bar.Type() {
-		return false
-	}
-	switch foo.Kind() {
-	case reflect.Map:
-		return compareMap(foo, bar)
-	case reflect.Array:
-		fallthrough
-	case reflect.Slice:
-		return compareSlice(foo, bar)
-	case reflect.Struct:
-		return compareStruct(foo, bar)
-	default:
-		return foo.Interface() == bar.Interface()
-	}
-}
-
-func deepCompare(foo, bar interface{}) bool {
-	v1 := reflect.ValueOf(foo)
-	v2 := reflect.ValueOf(bar)
-
-	return deepCompareValue(v1, v2)
-}
-
 // It's important that baseConfig and newConfig are passed by value!
 func checkVMConfig(config1, config2 vc.VMConfig) error {
 	if config1.HypervisorType != config2.HypervisorType {
@@ -179,7 +124,7 @@ func checkVMConfig(config1, config2 vc.VMConfig) error {
 	resetHypervisorConfig(&config1)
 	resetHypervisorConfig(&config2)
 
-	if !deepCompare(config1, config2) {
+	if !utils.DeepCompare(config1, config2) {
 		return fmt.Errorf("hypervisor config does not match, base: %+v. new: %+v", config1, config2)
 	}
 
@@ -280,6 +225,16 @@ func (f *factory) GetVM(ctx context.Context, config vc.VMConfig) (*vc.VM, error)
 	}
 
 	return vm, nil
+}
+
+// Config returns base factory config.
+func (f *factory) Config() vc.VMConfig {
+	return f.base.Config()
+}
+
+// GetBaseVM returns a paused VM created by the base factory.
+func (f *factory) GetBaseVM(ctx context.Context, config vc.VMConfig) (*vc.VM, error) {
+	return f.base.GetBaseVM(ctx, config)
 }
 
 // CloseFactory closes the factory.
