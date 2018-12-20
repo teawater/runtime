@@ -53,9 +53,9 @@ func needSystemd(config vc.HypervisorConfig) bool {
 
 // HandleFactory  set the factory
 func HandleFactory(ctx context.Context, vci vc.VC, runtimeConfig *oci.RuntimeConfig) {
-	if !runtimeConfig.FactoryConfig.Template {
+	/*if !runtimeConfig.FactoryConfig.Template {
 		return
-	}
+	}*/
 
 	factoryConfig := vf.Config{
 		Template: true,

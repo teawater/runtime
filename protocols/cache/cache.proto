@@ -1,0 +1,19 @@
+//
+// Copyright 2019 HyperHQ Inc.
+//
+// SPDX-License-Identifier: Apache-2.0
+//
+
+syntax = "proto3";
+
+package cache;
+
+import "google/protobuf/empty.proto";
+
+service CacheService {
+    rpc GetBaseVM(google.protobuf.Empty) returns (JsonVM);
+}
+
+message JsonVM {
+    bytes data = 1;
+}

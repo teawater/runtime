@@ -8,6 +8,7 @@ package factory
 import (
 	"context"
 	"fmt"
+	"github.com/kata-containers/runtime/virtcontainers/factory/grpcCache"
 	"reflect"
 
 	vc "github.com/kata-containers/runtime/virtcontainers"
@@ -15,7 +16,7 @@ import (
 	"github.com/kata-containers/runtime/virtcontainers/factory/cache"
 	"github.com/kata-containers/runtime/virtcontainers/factory/direct"
 	"github.com/kata-containers/runtime/virtcontainers/factory/template"
-	opentracing "github.com/opentracing/opentracing-go"
+	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 )
 
@@ -23,8 +24,8 @@ var factoryLogger = logrus.FieldLogger(logrus.New())
 
 // Config is a collection of VM factory configurations.
 type Config struct {
-	Template bool
-	Cache    uint
+	Template      bool
+	Cache         uint
 
 	VMConfig vc.VMConfig
 }
@@ -53,6 +54,10 @@ func NewFactory(ctx context.Context, config Config, fetchOnly bool) (vc.Factory,
 
 	if fetchOnly && config.Cache > 0 {
 		return nil, fmt.Errorf("cache factory does not support fetch")
+	}
+
+	if config.Cache == 0 {
+		return &factory{grpcCache.New(ctx, config.VMConfig)}, nil
 	}
 
 	var b base.FactoryBase
@@ -187,9 +192,10 @@ func checkVMConfig(config1, config2 vc.VMConfig) error {
 }
 
 func (f *factory) checkConfig(config vc.VMConfig) error {
-	baseConfig := f.base.Config()
+	//baseConfig := f.base.Config()
+	return nil
 
-	return checkVMConfig(config, baseConfig)
+	//return checkVMConfig(config, baseConfig)
 }
 
 func (f *factory) validateNewVMConfig(config vc.VMConfig) error {
@@ -280,6 +286,11 @@ func (f *factory) GetVM(ctx context.Context, config vc.VMConfig) (*vc.VM, error)
 	}
 
 	return vm, nil
+}
+
+// GetBaseVM returns a paused VM created by the base factory.
+func (f *factory) GetBaseVM(ctx context.Context, config vc.VMConfig) (*vc.VM, error) {
+	return f.base.GetBaseVM(ctx, config)
 }
 
 // CloseFactory closes the factory.

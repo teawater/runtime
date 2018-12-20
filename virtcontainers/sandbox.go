@@ -933,6 +933,7 @@ func (s *Sandbox) startVM() error {
 
 	if err := s.network.run(s.networkNS.NetNsPath, func() error {
 		if s.factory != nil {
+			s.Logger().Info("Starting VM1")
 			vm, err := s.factory.GetVM(ctx, VMConfig{
 				HypervisorType:   s.config.HypervisorType,
 				HypervisorConfig: s.config.HypervisorConfig,
@@ -941,6 +942,7 @@ func (s *Sandbox) startVM() error {
 				ProxyType:        s.config.ProxyType,
 				ProxyConfig:      s.config.ProxyConfig,
 			})
+			s.Logger().Info("Starting VM2")
 			if err != nil {
 				return err
 			}

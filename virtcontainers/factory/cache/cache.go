@@ -38,6 +38,7 @@ func New(ctx context.Context, count uint, b base.FactoryBase) base.FactoryBase {
 		go func() {
 			for {
 				vm, err := b.GetBaseVM(ctx, c.Config())
+				fmt.Println("GetBaseVM", vm, err)
 				if err != nil {
 					c.wg.Done()
 					c.CloseFactory(ctx)
