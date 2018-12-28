@@ -37,6 +37,7 @@ const defaultEnableMemPrealloc bool = false
 const defaultEnableHugePages bool = false
 const defaultEnableSwap bool = false
 const defaultEnableDebug bool = false
+const defaultEnableLogWithSource bool = false
 const defaultDisableNestingChecks bool = false
 const defaultMsize9p uint32 = 8192
 const defaultHotplugVFIOOnRootBus bool = false

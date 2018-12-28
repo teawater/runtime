@@ -106,6 +106,7 @@ type hypervisor struct {
 	HugePages               bool   `toml:"enable_hugepages"`
 	Swap                    bool   `toml:"enable_swap"`
 	Debug                   bool   `toml:"enable_debug"`
+	LogWithSource           bool   `toml:"enable_log_with_source"`
 	DisableNestingChecks    bool   `toml:"disable_nesting_checks"`
 	EnableIOThreads         bool   `toml:"enable_iothreads"`
 	UseVSock                bool   `toml:"use_vsock"`
@@ -532,6 +533,7 @@ func newQemuHypervisorConfig(h hypervisor) (vc.HypervisorConfig, error) {
 		HugePages:               h.HugePages,
 		Mlock:                   !h.Swap,
 		Debug:                   h.Debug,
+		LogWithSource:           h.LogWithSource,
 		DisableNestingChecks:    h.DisableNestingChecks,
 		BlockDeviceDriver:       blockDriver,
 		BlockDeviceCacheSet:     h.BlockDeviceCacheSet,
@@ -694,6 +696,7 @@ func initConfig() (config oci.RuntimeConfig, err error) {
 		HugePages:               defaultEnableHugePages,
 		Mlock:                   !defaultEnableSwap,
 		Debug:                   defaultEnableDebug,
+		LogWithSource:           defaultEnableLogWithSource,
 		DisableNestingChecks:    defaultDisableNestingChecks,
 		BlockDeviceDriver:       defaultBlockDeviceDriver,
 		BlockDeviceCacheSet:     defaultBlockDeviceCacheSet,

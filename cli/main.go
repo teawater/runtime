@@ -26,6 +26,7 @@ import (
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
+	vcUtils "github.com/kata-containers/runtime/virtcontainers/utils"
 )
 
 // specConfig is the name of the file holding the containers configuration
@@ -239,6 +240,8 @@ func setExternalLoggers(ctx context.Context, logger *logrus.Entry) {
 	// Set the OCI package logger.
 	oci.SetLogger(ctx, logger)
 
+	vcUtils.AddSource(ctx, logger)
+
 	// Set the katautils package logger
 	katautils.SetLogger(ctx, logger, originalLoggerLevel)
 }
@@ -338,6 +341,15 @@ func beforeSubcommands(c *cli.Context) error {
 	// make the data accessible to the sub-commands.
 	c.App.Metadata["runtimeConfig"] = runtimeConfig
 	c.App.Metadata["configFile"] = configFile
+
+	ctx, err := cliContextToContext(c)
+	if err != nil {
+		return err
+	}
+	if runtimeConfig.HypervisorConfig.LogWithSource {
+		ctx = vcUtils.WithSource(ctx)
+	}
+	c.App.Metadata["context"] = ctx
 
 	return nil
 }

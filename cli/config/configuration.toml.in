@@ -150,6 +150,10 @@ enable_iothreads = @DEFENABLEIOTHREADS@
 # Default false
 #enable_debug = true
 
+# Enable show source code info in log.
+# Default false
+#enable_log_with_source = true
+
 # Disable the customizations done in the runtime when it detects
 # that it is running on top a VMM. This will result in the runtime
 # behaving as it would when running on bare metal.

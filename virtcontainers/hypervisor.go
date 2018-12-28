@@ -245,6 +245,9 @@ type HypervisorConfig struct {
 	// enable debug output where available.
 	Debug bool
 
+	// LogWithSource specifies show source code info in log or not.
+	LogWithSource bool
+
 	// MemPrealloc specifies if the memory should be pre-allocated
 	MemPrealloc bool
 
