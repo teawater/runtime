@@ -346,13 +346,14 @@
   revision = "342cbe0a04158f6dcb03ca0079991a51a4248c02"
 
 [[projects]]
-  digest = "1:d470faddd8d4b027226f9a5ff9d88962c34bb1699dde2acd7e9bfb70a3703d45"
+  digest = "1:43760d01823ba098702f773fbede110df0cd6d8b7677296375c4f01c967620d1"
   name = "github.com/golang/protobuf"
   packages = [
     "proto",
     "ptypes",
     "ptypes/any",
     "ptypes/duration",
+    "ptypes/empty",
     "ptypes/timestamp",
   ]
   pruneopts = "NUT"
@@ -708,6 +709,8 @@
     "github.com/go-openapi/strfmt",
     "github.com/gogo/protobuf/proto",
     "github.com/gogo/protobuf/types",
+    "github.com/golang/protobuf/proto",
+    "github.com/golang/protobuf/ptypes/empty",
     "github.com/intel/govmm/qemu",
     "github.com/kata-containers/agent/pkg/types",
     "github.com/kata-containers/agent/protocols/client",
