@@ -86,3 +86,7 @@
 [[constraint]]
   branch = "master"
   name = "github.com/containerd/cgroups"
+
+[[constraint]]
+  name = "github.com/golang/protobuf"
+  version = "1.0.0"
