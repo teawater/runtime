@@ -177,6 +177,10 @@ SHIMV2 = containerd-shim-kata-v2
 SHIMV2_OUTPUT = $(CURDIR)/$(SHIMV2)
 SHIMV2_DIR = $(CLI_DIR)/$(SHIMV2)
 
+VMCACHE = kata-vmcache
+VMCACHE_OUTPUT = $(CURDIR)/$(VMCACHE)
+VMCACHE_DIR = $(CLI_DIR)/$(VMCACHE)
+
 SOURCES := $(shell find . 2>&1 | grep -E '.*\.(c|h|go)$$')
 VERSION := ${shell cat ./VERSION}
 COMMIT_NO := $(shell git rev-parse HEAD 2> /dev/null || true)
@@ -351,7 +355,7 @@ define SHOW_ARCH
   $(shell printf "\\t%s%s\\\n" "$(1)" $(if $(filter $(ARCH),$(1))," (default)",""))
 endef
 
-all: runtime containerd-shim-v2 netmon
+all: runtime containerd-shim-v2 netmon $(VMCACHE)
 
 containerd-shim-v2: $(SHIMV2_OUTPUT)
 
@@ -359,6 +363,11 @@ netmon: $(NETMON_TARGET_OUTPUT)
 
 $(NETMON_TARGET_OUTPUT): $(SOURCES)
 	$(QUIET_BUILD)(cd $(NETMON_DIR) && go build $(BUILDFLAGS) -o $@ -ldflags "-X main.version=$(VERSION)")
+
+$(VMCACHE): $(VMCACHE_OUTPUT)
+
+$(VMCACHE_OUTPUT): $(TARGET_OUTPUT)
+	$(QUIET_BUILD)(cd $(VMCACHE_DIR)/ && go build -i -o $@ .)
 
 runtime: $(TARGET_OUTPUT) $(CONFIGS)
 .DEFAULT: default
@@ -437,11 +446,13 @@ $(if $(findstring uncompressed,$1),vmlinux.container,vmlinuz.container)
 endef
 
 GENERATED_CONFIG = $(CLI_DIR)/config-generated.go
+VMCACHE_GENERATED_CONFIG = $(VMCACHE_DIR)/config-generated.go
 
 GENERATED_GO_FILES += $(GENERATED_CONFIG)
 
 $(GENERATED_CONFIG): Makefile VERSION
 	$(QUIET_GENERATE)echo "$$GENERATED_CODE" >$@
+	@cp $@ $(VMCACHE_GENERATED_CONFIG)
 
 $(TARGET_OUTPUT): $(EXTRA_DEPS) $(SOURCES) $(GENERATED_GO_FILES) $(GENERATED_FILES) Makefile | show-summary
 	$(QUIET_BUILD)(cd $(CLI_DIR) && go build $(BUILDFLAGS) -o $@ .)
@@ -533,12 +544,15 @@ check-go-static:
 coverage:
 	$(QUIET_TEST).ci/go-test.sh html-coverage
 
-install: default runtime install-scripts install-completions install-configs install-bin install-containerd-shim-v2 install-bin-libexec
+install: default runtime install-scripts install-completions install-configs install-bin install-containerd-shim-v2 install-kata-vmcache install-bin-libexec
 
 install-bin: $(BINLIST)
 	$(QUIET_INST)$(foreach f,$(BINLIST),$(call INSTALL_EXEC,$f,$(BINDIR)))
 
 install-containerd-shim-v2: $(SHIMV2)
+	$(QUIET_INST)$(call INSTALL_EXEC,$<,$(BINDIR))
+
+install-kata-vmcache: $(VMCACHE)
 	$(QUIET_INST)$(call INSTALL_EXEC,$<,$(BINDIR))
 
 install-bin-libexec: $(BINLIBEXECLIST)
@@ -555,7 +569,7 @@ install-completions:
 	$(QUIET_INST)install --mode 0644 -D  $(BASH_COMPLETIONS) $(DESTDIR)/$(BASH_COMPLETIONSDIR)/$(notdir $(BASH_COMPLETIONS));
 
 clean:
-	$(QUIET_CLEAN)rm -f $(TARGET) $(SHIMV2) $(NETMON_TARGET) $(CONFIGS) $(GENERATED_GO_FILES) $(GENERATED_FILES) $(COLLECT_SCRIPT)
+	$(QUIET_CLEAN)rm -f $(TARGET) $(SHIMV2) $(VMCACHE_OUTPUT) $(NETMON_TARGET) $(CONFIGS) $(GENERATED_GO_FILES) $(GENERATED_FILES) $(COLLECT_SCRIPT)
 
 show-usage: show-header
 	@printf "• Overview:\n"

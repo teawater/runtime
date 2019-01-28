@@ -219,15 +219,18 @@ enable_iothreads = @DEFENABLEIOTHREADS@
 # Default false
 #enable_template = true
 
-# VM cache support.  Once enabled, need use "kata-runtime cache" command
-# start the VM cache server that created some VMs as VM cache.  And each
-# kata-runtime will request VM from VM cache server.  It helps speeding
-# up new container creation.
+# VM cache support.  Once enabled, need use "kata-vmcache" command start
+# the VM cache server that created some VMs (number is set by option number)
+# as VM cache.  Each kata-runtime will request VM from VM cache server
+# through vm_cache_endpoint.
+# It helps speeding up new container creation.
 #
 # Default false
 #enable_vm_cache = true
 
 # Specify the endpoint of transport VM from the VM cache server to runtime.
+# "kata-vmcache" will start a gRPC server in this endpoint.
+# Each kata-runtime will request VM through gRPC protocol.
 # Default /var/run/kata-containers/cache.sock
 #vm_cache_endpoint = "/var/run/kata-containers/cache.sock"
 

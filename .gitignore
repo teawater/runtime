@@ -4,11 +4,13 @@
 /cli/config/configuration-fc.toml
 /cli/config/configuration-qemu.toml
 /cli/config-generated.go
+/cli/kata-vmcache/config-generated.go
 /cli/coverage.html
 /containerd-shim-kata-v2
 /data/kata-collect-data.sh
 /kata-netmon
 /kata-runtime
+/kata-vmcache
 /virtcontainers/hack/virtc/virtc
 /virtcontainers/hook/mock/hook
 /virtcontainers/profile.cov

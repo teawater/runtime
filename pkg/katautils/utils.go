@@ -134,3 +134,15 @@ func RunCommandFull(args []string, includeStderr bool) (string, error) {
 func RunCommand(args []string) (string, error) {
 	return RunCommandFull(args, false)
 }
+
+// MakeVersionString returns a multi-line string describing the kata
+// version.
+func MakeVersionString(versionStr, commitStr, specVersionStr string) string {
+	v := make([]string, 0, 3)
+
+	v = append(v, name+"  : "+versionStr)
+	v = append(v, "   commit   : "+commitStr)
+	v = append(v, "   OCI specs: "+specVersionStr)
+
+	return strings.Join(v, "\n")
+}

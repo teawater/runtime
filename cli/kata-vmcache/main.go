@@ -7,6 +7,8 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"github.com/opencontainers/runtime-spec/specs-go"
 	"net"
 	"os"
 	"os/signal"
@@ -14,15 +16,29 @@ import (
 	rDebug "runtime/debug"
 
 	google_protobuf "github.com/golang/protobuf/ptypes/empty"
+	"github.com/kata-containers/runtime/pkg/katautils"
 	pb "github.com/kata-containers/runtime/protocols/cache"
 	vc "github.com/kata-containers/runtime/virtcontainers"
 	vf "github.com/kata-containers/runtime/virtcontainers/factory"
-	"github.com/kata-containers/runtime/virtcontainers/pkg/oci"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 	"golang.org/x/sys/unix"
 	"google.golang.org/grpc"
+
 )
+
+const vmCacheName = "kata-vmcache"
+var usage = fmt.Sprintf(`%s kata VM cache server
+
+When enable_vm_cache enabled, %s start the VM cache server
+that created some VMs (number is set by option number) as
+VM cache.
+Each kata-runtime will request VM from VM cache server
+through vm_cache_endpoint.
+It helps speeding up new container creation.`,  vmCacheName, vmCacheName)
+
+var kataLog = logrus.New()
 
 type cacheServer struct {
 	rpc     *grpc.Server
@@ -31,6 +47,7 @@ type cacheServer struct {
 
 var jsonVMConfig *pb.GrpcVMConfig
 
+// Config requests base factory config and convert it to gRPC protocol.
 func (s *cacheServer) Config(ctx context.Context, empty *google_protobuf.Empty) (*pb.GrpcVMConfig, error) {
 	if jsonVMConfig == nil {
 		config := s.factory.Config()
@@ -45,6 +62,7 @@ func (s *cacheServer) Config(ctx context.Context, empty *google_protobuf.Empty) 
 	return jsonVMConfig, nil
 }
 
+// GetBaseVM requests a paused VM and convert it to gRPC protocol.
 func (s *cacheServer) GetBaseVM(ctx context.Context, empty *google_protobuf.Empty) (*pb.GrpcVM, error) {
 	config := s.factory.Config()
 
@@ -103,28 +121,33 @@ func handleSignals(s *cacheServer, signals chan os.Signal) chan struct{} {
 	return done
 }
 
-var cacheCLICommand = cli.Command{
-	Name:  "cache",
-	Usage: "run a vm cache server",
-	Flags: []cli.Flag{
+func main() {
+	app := cli.NewApp()
+	app.Name = vmCacheName
+	app.Usage = usage
+	app.Writer = os.Stdout
+	app.Version = katautils.MakeVersionString(version, commit, specs.Version)
+	app.Flags = []cli.Flag{
+		cli.StringFlag{
+			Name:  configFilePathOption,
+			Usage: project + " config file path",
+		},
 		cli.UintFlag{
 			Name:  "number, n",
 			Value: 1,
-			Usage: `number of cache`,
+			Usage: "number of cache",
 		},
-	},
-	Action: func(context *cli.Context) error {
-		cacheNum := context.Uint("number")
+	}
+	app.Action = func(c *cli.Context) error {
+		cacheNum := c.Uint("number")
 		if cacheNum == 0 {
-			return errors.New("number of cache must big than 0")
+			return errors.New("cache number must be greater than zero")
 		}
-		ctx, err := cliContextToContext(context)
+		ctx := context.Background()
+		fmt.Println(c.GlobalString(configFilePathOption))
+		_, runtimeConfig, err := katautils.LoadConfiguration(c.GlobalString(configFilePathOption), false, false)
 		if err != nil {
-			return err
-		}
-		runtimeConfig, ok := context.App.Metadata["runtimeConfig"].(oci.RuntimeConfig)
-		if !ok {
-			return errors.New("invalid runtime config")
+			return errors.Wrap(err,"invalid runtime config")
 		}
 		if !runtimeConfig.FactoryConfig.VMCache {
 			return errors.New("vm cache not enabled")
@@ -173,5 +196,10 @@ var cacheCLICommand = cli.Command{
 		kataLog.WithField("endpoint", runtimeConfig.FactoryConfig.VMCacheEndpoint).Info("VM cache server stop")
 
 		return nil
-	},
+	}
+
+	err := app.Run(os.Args)
+	if err != nil {
+		kataLog.Fatal(err)
+	}
 }
