@@ -239,6 +239,9 @@ type HypervisorConfig struct {
 	// MemOffset specifies memory space for nvdimm device
 	MemOffset uint32
 
+	// VirtioMem is used to enable/disable virtio-mem
+	VirtioMem bool
+
 	// VirtioFSCacheSize is the DAX cache size in MiB
 	VirtioFSCacheSize uint32
 

@@ -1877,6 +1877,7 @@ func (s *Sandbox) calculateSandboxMemory() int64 {
 
 		if m := c.Resources.Memory; m != nil && m.Limit != nil {
 			memorySandbox += *m.Limit
+			s.Logger().WithField("container-id", c.ID).Debugf("jojo size %d", memorySandbox / 1024/1024)
 		}
 	}
 	return memorySandbox

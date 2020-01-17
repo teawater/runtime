@@ -109,6 +109,7 @@ type hypervisor struct {
 	MemorySize              uint32   `toml:"default_memory"`
 	MemSlots                uint32   `toml:"memory_slots"`
 	MemOffset               uint32   `toml:"memory_offset"`
+	VirtioMem               bool     `toml:"enable_virtio_mem"`
 	DefaultBridges          uint32   `toml:"default_bridges"`
 	Msize9p                 uint32   `toml:"msize_9p"`
 	DisableBlockDeviceUse   bool     `toml:"disable_block_device_use"`
@@ -623,6 +624,7 @@ func newQemuHypervisorConfig(h hypervisor) (vc.HypervisorConfig, error) {
 		MemorySize:              h.defaultMemSz(),
 		MemSlots:                h.defaultMemSlots(),
 		MemOffset:               h.defaultMemOffset(),
+		VirtioMem:               h.VirtioMem,
 		EntropySource:           h.GetEntropySource(),
 		DefaultBridges:          h.defaultBridges(),
 		DisableBlockDeviceUse:   h.DisableBlockDeviceUse,
@@ -773,6 +775,7 @@ func newClhHypervisorConfig(h hypervisor) (vc.HypervisorConfig, error) {
 		MemorySize:              h.defaultMemSz(),
 		MemSlots:                h.defaultMemSlots(),
 		MemOffset:               h.defaultMemOffset(),
+		VirtioMem:               h.VirtioMem,
 		EntropySource:           h.GetEntropySource(),
 		DefaultBridges:          h.defaultBridges(),
 		DisableBlockDeviceUse:   h.DisableBlockDeviceUse,
@@ -1054,6 +1057,7 @@ func GetDefaultHypervisorConfig() vc.HypervisorConfig {
 		DefaultMaxVCPUs:         defaultMaxVCPUCount,
 		MemorySize:              defaultMemSize,
 		MemOffset:               defaultMemOffset,
+		VirtioMem:               defaultVirtioMem,
 		DisableBlockDeviceUse:   defaultDisableBlockDeviceUse,
 		DefaultBridges:          defaultBridgesCount,
 		MemPrealloc:             defaultEnableMemPrealloc,
